@@ -1,0 +1,44 @@
+---
+title: 'Data Preprocessing'
+author: 'Alister Salmon'
+date: 'February 3, 2024'
+output: pdf_document
+---
+
+```{r setup}
+  # clear the R environment
+  rm(list=ls())
+```
+
+```{r data_import}
+  data.veg = read.csv('Vegetable Prices 2020.csv')
+  data.fruit = read.csv('Fruit Prices 2020.csv')
+  
+```
+
+```{r combining}
+  # rename columns
+  colnames(data.veg)[1] = 'Food'
+  colnames(data.fruit)[1] = 'Food'
+  
+  # create type column
+  data.veg['isFruit'] = 0
+  data.fruit['isFruit'] = 1
+  
+  # combine them
+  data = rbind(data.veg, data.fruit)
+  
+  head(data)
+  tail(data)
+```
+
+
+
+```{r export}
+  write.csv(data, 'fruit_veg.csv', row.names = FALSE)
+```
+
+
+
+
+

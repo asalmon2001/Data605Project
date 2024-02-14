@@ -1,0 +1,74 @@
+---
+title: 'Spilt Milk'
+author: 'Alister Salmon'
+date: 'February 6, 2023'
+output: pdf_document
+---
+
+# Objective
+
+Visualize the distribution of yield and price of fruits and vegetable by form
+
+
+```{r setup}
+  rm(list = ls())
+
+  library(ggplot2)
+  library(dplyr)
+```
+
+```{r data_import}
+  data = read.csv('fruit_veg.csv')
+  head(data)
+  
+  data.fruit = filter(data, isFruit == 1)
+  data.veg = filter(data, isFruit == 0)
+```
+
+## Yield
+
+```{r yield_fruit}
+
+  ggplot(data.fruit, aes(x=Yield, fill=Form)) +
+    geom_histogram() + ggtitle('Distribution of Fruit Yield') + ylab('Count')
+  
+  ggplot(filter(data.fruit, Form=='Fresh'), aes(x=Yield)) + geom_boxplot() +
+    theme(axis.text.y = element_blank(), axis.line.y = element_blank(),
+          axis.ticks.y = element_blank()) +
+    coord_fixed(ratio = 0.1)
+```
+
+
+```{r yield_veg}
+
+  ggplot(data.veg, aes(x=Yield, fill=Form)) +
+    geom_histogram() + ggtitle('Distribution of Vegetable Yield') + ylab('Count')
+  
+  ggplot(filter(data.veg, Form=='Fresh'), aes(x=Yield)) + geom_boxplot() +
+    theme(axis.text.y = element_blank(), axis.line.y = element_blank(),
+          axis.ticks.y = element_blank()) +
+    coord_fixed(ratio = 0.1)
+```
+
+## Price per Cup
+
+
+```{r price_fruit}
+
+  ggplot(data.fruit, aes(x=CupEquivalentPrice, fill=Form)) +
+    geom_histogram() + ggtitle('Distribution of Price per Cup of Fruit by From') +
+    ylab('Count')
+  
+  ggplot(data.fruit, aes(x=CupEquivalentPrice, y=Form)) + geom_boxplot()
+```
+
+```{r price_veg}
+
+  ggplot(data.veg, aes(x=CupEquivalentPrice, fill=Form)) +
+    geom_histogram() + ggtitle('Distribution of Price per Cup of Veg by From') +
+    ylab('Count')
+  
+  ggplot(data.veg, aes(x=CupEquivalentPrice, y=Form)) + geom_boxplot()
+```
+
+

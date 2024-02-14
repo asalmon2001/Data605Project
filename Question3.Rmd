@@ -1,0 +1,78 @@
+---
+title: 'Carrots to Cabbages'
+author: 'Alister Salmon'
+date: 'February 6, 2023'
+output: pdf_document
+---
+
+# Objective
+
+Compare vegetables (price and yield)
+
+**Comparisons:**
+
+Cheapest and most expensive vegetable
+
+Avg. price/yield of fresh vs canned vs frozen
+
+```{r setup}
+  rm(list=ls())
+
+  library(dplyr)
+  library(ggplot2)
+```
+
+```{r data_import}
+  data = read.csv('Vegetable Prices 2020.csv')
+  head(data)
+```
+
+```{r order_by_cup_price}
+  data.cup_price.ascending = data[order(data$CupEquivalentPrice),]
+  data.cup_price.descending = data[order(data$CupEquivalentPrice,decreasing=TRUE),]
+  
+  head(select(data.cup_price.ascending, Vegetable, Form, CupEquivalentPrice), 5)
+  head(select(data.cup_price.descending, Vegetable, Form, CupEquivalentPrice), 5)
+```
+
+```{r order_by_yield}
+  data.yield.ascending = data[order(data$Yield),]
+  
+  head(select(data.yield.ascending, Vegetable, Form, Yield), 5)
+```
+
+
+
+```{r avg_form_price}
+  avg_form.price = aggregate(CupEquivalentPrice~Form, data=data, mean)
+  avg_form.price = avg_form.price[order(avg_form.price$CupEquivalentPrice),]
+  
+  ggplot(data=avg_form.price, aes(x=reorder(Form,-CupEquivalentPrice),
+                                  y=CupEquivalentPrice)) + 
+    geom_bar(stat='identity', fill='salmon') + theme_minimal() +
+    xlab('Vegetable Form') + ylab('Price per Cup') +
+    geom_text(aes(label=sprintf('%.3f', CupEquivalentPrice)), vjust=1.6) +
+    ggtitle('Average Price per Cup of Vegetable by Form')
+```
+
+```{r avg_form_yield}
+  avg_form.yield = aggregate(Yield~Form, data=data, mean)
+  avg_form.yield = avg_form.yield[order(avg_form.yield$Yield),]
+
+  ggplot(data=avg_form.yield, aes(x=reorder(Form,-Yield),
+                                  y=Yield)) + 
+    geom_bar(stat='identity', fill='salmon') + theme_minimal() +
+    xlab('Vegetable Form') + ylab('Yield per Cup') +
+    geom_text(aes(label=sprintf('%.3f', Yield)), vjust=1.6) +
+    ggtitle('Average Yield per Cup of Vegetable by Form')
+```
+
+
+
+
+
+
+
+
+
+

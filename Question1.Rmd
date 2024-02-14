@@ -1,0 +1,86 @@
+---
+title: 'Fruit or Vegetable Predictor'
+author: 'Alister Salmon'
+date: 'February 3, 2024'
+output: pdf_document
+---
+
+# Objective
+
+Create a logistic regression model to predict whether an item is a fruit or a vegetable
+
+**Input features:**
+`Yield`, `CupEquivalentSize`, `CupEquivalentPrice`
+
+**Output:**
+`Vegetable` or `Fruit`
+
+```{r setup}
+  rm(list=ls())
+
+  library(dplyr)
+  library(caret)
+  library(ggplot2)
+```
+
+```{r data_import}
+  data = read.csv('fruit_veg.csv')
+  head(data)
+  colnames(data)
+  length(data$Food)
+```
+
+
+```{r train_test_split}
+  set.seed(2024)
+
+  # 10 fruit and 15 veg
+  num_fruit = 10
+  num_veg = 15
+
+  # Split the data into fruit and vegetable dataframes
+  data.fruit = filter(data, isFruit==1)
+  data.veg = filter(data, isFruit==0)
+  
+  # generate the indicies for the test
+  test.fruit.ind = sample(1:length(data.fruit$Food), num_fruit)
+  test.veg.ind = sample(1:length(data.veg$Food), num_veg)
+  
+  # grab the test items from each dataframe
+  test.fruit = data.fruit[test.fruit.ind,]
+  test.veg = data.veg[test.veg.ind,]
+  
+  # gather the remaining items
+  train.fruit = data.fruit[-test.fruit.ind,]
+  train.veg = data.veg[-test.veg.ind,]
+  
+  # combine the fruit and vegetable test/train dataframes
+  test = rbind(test.fruit, test.veg)
+  train = rbind(train.fruit, train.veg)
+  
+  # shuffle the sets
+  test = test[sample(1:nrow(test)),]
+  train = train[sample(1:nrow(train)),]
+  
+  test
+```
+
+
+```{r model_creation}
+  log_model = glm(isFruit~Yield+CupEquivalentSize+CupEquivalentPrice,
+                  family = binomial, data = train)
+  summary(log_model)
+```
+
+```{r model_testing}
+  log_model.raw_prediction = predict(log_model, test, type="response")
+  log_model.prediction = rep(0, nrow(test))
+  log_model.prediction[log_model.raw_prediction > 0.5] = 1
+  
+  log_model.classification_table = table(log_model.prediction, test$isFruit)
+  log_model.cm = confusionMatrix(log_model.classification_table)
+  
+  log_model.cm
+```
+
+

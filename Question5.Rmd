@@ -1,0 +1,68 @@
+---
+title: 'Is a Tomato a Fruit?'
+author: 'Alister Salmon'
+date: 'February 10, 2024'
+output: pdf_document
+---
+
+# Objective
+
+Are the natural clusters based on retail price, yield, and price to cup of fruits and vegetables reflective of if they are a fruit or vegetable?
+
+
+```{r setup}
+  rm(list=ls())
+  
+  library(dplyr)
+  library(plotly)
+```
+
+
+```{r import_data}
+  data = read.csv('fruit_veg.csv')
+  data = data.frame(data)
+  head(data)
+  
+  data.fruit = filter(data, isFruit==1)
+  data.veg = filter(data, isFruit==0)
+```
+
+```{r split_data}
+  set.seed(2024)
+  
+  features = c('RetailPrice', 'Yield', 'CupEquivalentPrice')
+  training = select(data, all_of(features))
+  training
+```
+
+
+
+```{r training}
+  set.seed(2024)
+
+  # create the model
+  model = kmeans(training, centers=2)
+  
+  # grab the model labels for the data
+  data['cluster'] = model$cluster
+  
+  # kmeans labels = {1,2}. We want {0,1}
+  data$cluster[data$cluster == 2] = 0
+  
+  confusion_matrix = table(data$isFruit, data$cluster)
+  confusionMatrix(confusion_matrix)
+```
+
+
+```{r 3d_scatter}
+  plot_ly(data=data, x=~RetailPrice, y=~Yield, z=~CupEquivalentPrice,
+                type='scatter3d', mode = 'markers', symbol=~I(isFruit), color=~cluster,
+                showLegend=FALSE)
+```
+
+
+```{r tomato}
+  data[grep('Tomato', data$Food),c('Food', 'isFruit', 'cluster')]
+```
+
+

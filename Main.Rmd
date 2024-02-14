@@ -1,0 +1,407 @@
+---
+title: 'Age Old Battle: Fruits and Vegetables'
+author: 'Alister Salmon'
+date: 'February 10, 2024'
+output: pdf_document
+always_allow_html: true
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+  # clear the R environment
+  rm(list=ls())
+
+  # import required libraries
+  library(dplyr)
+  library(plotly)
+  library(ggplot2)
+  library(caret)
+```
+
+
+# Data Processing
+
+```{r data_import}
+  # import the data
+  data.veg = data.frame(read.csv('Vegetable Prices 2020.csv'))
+  data.fruit = data.frame(read.csv('Fruit Prices 2020.csv'))
+  
+```
+
+```{r combining}
+  # rename columns
+  colnames(data.veg)[1] = 'Food'
+  colnames(data.fruit)[1] = 'Food'
+  
+  # create type column
+  data.veg['isFruit'] = 0
+  data.fruit['isFruit'] = 1
+  
+  # combine them
+  data = data.frame(rbind(data.veg, data.fruit))
+  
+  head(data)
+  tail(data)
+```
+
+
+```{r export}
+  # export the cleaned data
+  write.csv(data, 'fruit_veg.csv', row.names = FALSE)
+```
+
+
+# Spilt Milk
+
+Visualize the distribution of yield and price of fruits and vegetable by form
+
+## Methodology
+
+### Distribution Based on Yield
+
+```{r dist_yield_fruit}
+  # histogram
+  ggplot(data.fruit, aes(x=Yield, fill=Form)) +
+    geom_histogram() + ggtitle('Distribution of Fruit Yield') + ylab('Count')
+  ggsave('visuals/fruit_hist_yield.jpg')
+  
+  # box plot of fresh
+  ggplot(filter(data.fruit, Form=='Fresh'), aes(x=Yield)) + geom_boxplot() +
+    theme(axis.text.y = element_blank(), axis.line.y = element_blank(),
+          axis.ticks.y = element_blank()) +
+    coord_fixed(ratio = 0.1)
+  ggsave('visuals/fruit_boxplot_fresh.jpg')
+```
+
+
+```{r dist_yield_veg}
+  # histogram
+  ggplot(data.veg, aes(x=Yield, fill=Form)) +
+    geom_histogram() + ggtitle('Distribution of Vegetable Yield') + ylab('Count')
+  ggsave('visuals/veg_hist_yield.jpg')
+  
+  # box plot of fresh
+  ggplot(filter(data.veg, Form=='Fresh'), aes(x=Yield)) + geom_boxplot() +
+    theme(axis.text.y = element_blank(), axis.line.y = element_blank(),
+          axis.ticks.y = element_blank())
+    coord_fixed(ratio = 0.1)
+  ggsave('visuals/veg_boxplot_fresh.jpg')
+```
+
+### Distribution Based on Price per Cup
+
+
+```{r dist_price_fruit}
+  # histogram
+  ggplot(data.fruit, aes(x=CupEquivalentPrice, fill=Form)) +
+    geom_histogram() + ggtitle('Distribution of Price per Cup of Fruit by From') +
+    ylab('Count') + xlab('Price Per Cup')
+  ggsave('visuals/fruit_hist_price.jpg')
+  
+  # box plot
+  ggplot(data.fruit, aes(x=CupEquivalentPrice, y=Form)) + geom_boxplot() +
+    xlab('Price per Cup') + ggtitle('Box Plots of Price per Cup of Fruit by Form')
+  ggsave('visuals/fruit_boxplot_price.jpg')
+```
+
+```{r dist_price_veg}
+  # histogram
+  ggplot(data.veg, aes(x=CupEquivalentPrice, fill=Form)) +
+    geom_histogram() + ggtitle('Distribution of Price per Cup of Vegetable by From') +
+    ylab('Count') + xlab('Price per Cup')
+  ggsave('visuals/veg_hist_price.jpg')
+  
+  # box plot
+  ggplot(data.veg, aes(x=CupEquivalentPrice, y=Form)) + geom_boxplot() +
+    xlab('Price per Cup')
+  ggsave('visuals/veg_boxplot_price.jpg')
+```
+
+## Results
+
+Price per cup of fruits and vegetables is roughly equivalent. Canned, dried, and frozen vegetables tend to be cheaper than that of fruit.
+
+
+
+# Apples to Oranges
+
+Compare fruits (prices and yield)
+
+**Comparisons:**
+
+Cheapest and most expensive fruits
+
+Avg. price/yields of fresh vs canned vs juice vs dried vs frozen
+
+## Methodology
+
+```{r fruit_order_by_cup_price}
+  # order the data by CupEquivalentPrice
+  data.fruit.cup_price.ascending = 
+    data.fruit[order(data.fruit$CupEquivalentPrice),]
+  
+  # get the least expensive
+  head(select(data.fruit.cup_price.ascending, Food, Form, CupEquivalentPrice), 5)
+  
+  # get the most expensive
+  tail(select(data.fruit.cup_price.ascending, Food, Form, CupEquivalentPrice), 5)
+```
+
+```{r fruit_order_by_yield}
+  data.fruit.yield.ascending = data.fruit[order(data.fruit$Yield),]
+  
+  head(select(data.fruit.yield.ascending, Food, Form, Yield), 5)
+  tail(select(data.fruit.yield.ascending, Food, Form, Yield), 5)
+```
+
+
+
+```{r fruit_avg_form_price}
+  data.fruit.avg_form.price = aggregate(CupEquivalentPrice~Form, data=data.fruit, mean)
+  
+  ggplot(data=data.fruit.avg_form.price, aes(x=reorder(Form,-CupEquivalentPrice),
+                                  y=CupEquivalentPrice)) + 
+    geom_bar(stat='identity', fill='salmon') + theme_minimal() +
+    xlab('Fruit Form') + ylab('Price per Cup') +
+    geom_text(aes(label=sprintf('%.3f', CupEquivalentPrice)), vjust=1.6) +
+    ggtitle('Average Price per Cup of Fruit by Form')
+  ggsave('visuals/fruit_price_by_form.jpg')
+```
+
+```{r fruit_avg_form_yield}
+  data.fruit.avg_form.yield = aggregate(Yield~Form, data=data.fruit, mean)
+
+  ggplot(data=data.fruit.avg_form.yield, aes(x=reorder(Form,-Yield),
+                                  y=Yield)) + 
+    geom_bar(stat='identity', fill='salmon') + theme_minimal() +
+    xlab('Fruit Form') + ylab('Yield per Cup') +
+    geom_text(aes(label=sprintf('%.3f', Yield)), vjust=1.6) +
+    ggtitle('Average Yield per Cup of Fruit by Form')
+  ggsave('visuals/fruit_yield_by_form.jpg')
+```
+
+```{r fruit_price_per_yield}
+  data.fruit.avg_form.avg_price_yield = 
+    data.frame(data.fruit.avg_form.price$Form,
+               data.fruit.avg_form.price$CupEquivalentPrice /
+                 data.fruit.avg_form.yield$Yield)
+  colnames(data.fruit.avg_form.avg_price_yield) = c('Form','Price')
+  
+  ggplot(data=data.fruit.avg_form.avg_price_yield, 
+         aes(x=reorder(Form,-Price), y=Price)) + 
+    geom_bar(stat='identity', fill='salmon') + theme_minimal() +
+    xlab('Fruit Form') + ylab('Price') +
+    geom_text(aes(label=sprintf('%.3f', Price)), vjust=1.6) +
+    ggtitle('Average Price per Edible Cup of Fruit by Form')
+  ggsave('visuals/fruit_price_per_yield.jpg')
+```
+
+
+## Results
+
+Cheapest form of fruit by edible cup is juice. Fresh fruit is suprisingly cheap; however, this could be due to the bananas and watermelon which are abnormally cheap. The most expensive form is frozen. I did not expect this; however, these results do not take into account calorie count. If that data was available, I am sure that the results would be much different.
+
+
+# Carrots to Cabbages
+
+Compare vegetables (prices and yield)
+
+**Comparisons:**
+
+Cheapest and most expensive vegetables
+
+Avg. price/yields of fresh vs canned vs frozen vs dried
+
+## Methodology
+
+```{r veg_order_by_cup_price}
+  # order the data by CupEquivalentPrice
+  data.veg.cup_price.ascending = 
+    data.veg[order(data.veg$CupEquivalentPrice),]
+  
+  # get the least expensive
+  head(select(data.veg.cup_price.ascending, Food, Form, CupEquivalentPrice), 5)
+  
+  # get the most expensive
+  tail(select(data.veg.cup_price.ascending, Food, Form, CupEquivalentPrice), 5)
+```
+
+```{r veg_order_by_yield}
+  data.veg.yield.ascending = data.veg[order(data.veg$Yield),]
+  
+  head(select(data.veg.yield.ascending, Food, Form, Yield), 5)
+  tail(select(data.veg.yield.ascending, Food, Form, Yield), 5)
+```
+
+
+
+```{r veg_avg_form_price}
+  data.veg.avg_form.price = aggregate(CupEquivalentPrice~Form, data=data.veg, mean)
+  #data.veg.avg_form.price =
+    #data.veg.avg_form.price[order(data.veg.avg_form.price$CupEquivalentPrice),]
+  
+  ggplot(data=data.veg.avg_form.price, aes(x=reorder(Form,-CupEquivalentPrice),
+                                  y=CupEquivalentPrice)) + 
+    geom_bar(stat='identity', fill='salmon') + theme_minimal() +
+    xlab('Vegetable Form') + ylab('Price per Cup') +
+    geom_text(aes(label=sprintf('%.3f', CupEquivalentPrice)), vjust=1.6) +
+    ggtitle('Average Price per Cup of Vegetable by Form')
+  ggsave('visuals/veg_price_by_form.jpg')
+```
+
+```{r veg_avg_form_yield}
+  data.veg.avg_form.yield = aggregate(Yield~Form, data=data.veg, mean)
+  #data.veg.avg_form.yield = 
+    #data.veg.avg_form.yield[order(data.veg.avg_form.yield$Yield),]
+
+  ggplot(data=data.veg.avg_form.yield, aes(x=reorder(Form,-Yield),
+                                  y=Yield)) + 
+    geom_bar(stat='identity', fill='salmon') + theme_minimal() +
+    xlab('Vegetable Form') + ylab('Yield per Cup') +
+    geom_text(aes(label=sprintf('%.3f', Yield)), vjust=1.6) +
+    ggtitle('Average Yield per Cup of Vegetable by Form')
+  ggsave('visuals/veg_yield_by_form.jpg')
+```
+
+```{r veg_price_per_yield}
+  data.veg.avg_form.avg_price_yield = 
+    data.frame(data.veg.avg_form.price$Form,
+               data.veg.avg_form.price$CupEquivalentPrice /
+                 data.veg.avg_form.yield$Yield)
+  colnames(data.veg.avg_form.avg_price_yield) = c('Form','Price')
+  
+  ggplot(data=data.veg.avg_form.avg_price_yield, 
+         aes(x=reorder(Form,-Price), y=Price)) + 
+    geom_bar(stat='identity', fill='salmon') + theme_minimal() +
+    xlab('Vegetable Form') + ylab('Price') +
+    geom_text(aes(label=sprintf('%.3f', Price)), vjust=1.6) +
+    ggtitle('Average Price per Edible Cup of Vegetable by Form')
+  ggsave('visuals/veg_price_per_yield.jpg')
+```
+
+
+## Results
+
+Cheapest form of vegetable by edible cup is canned. The most expensive form is frozen. The yield of dried is very high compard to the others but it becomes equalized when price per cup is involved. Once again, this does not consider calorie count!
+
+
+
+# Is a Tomato a fruit?
+
+Determine if the natural clusters based on retail price, yield, and price per cup of fruits and vegetables is reflective of if they are a fruit or vegetable.
+
+## Methodology
+
+```{r kmeans_split_data}
+  set.seed(2024)
+  
+  features = c('RetailPrice', 'Yield', 'CupEquivalentPrice')
+  training = select(data, all_of(features))
+```
+
+
+```{r kmeans_training}
+  set.seed(2024)
+
+  # create the model
+  model = kmeans(training, centers=2)
+  
+  # grab the model labels for the data
+  data['cluster'] = model$cluster
+  
+  # kmeans labels = {1,2}. We want {0,1}
+  data$cluster[data$cluster == 2] = 0
+  
+  confusion_matrix = table(data$isFruit, data$cluster)
+  confusionMatrix(confusion_matrix)
+```
+
+
+```{r kmeans_3d_scatter, message=FALSE, warning=FALSE}
+  fig = plot_ly(data=data, x=~RetailPrice, y=~Yield, z=~CupEquivalentPrice,
+                type='scatter3d', mode = 'markers', symbol=~I(isFruit), color=~cluster)
+  fig = layout(fig, title='Clusters of Fruits and Vegetables Based on 
+         Price, Yield, and Price per Cup')
+  fig
+```
+
+
+```{r tomato}
+  data[grep('Tomato', data$Food),c('Food', 'isFruit', 'cluster')]
+```
+
+## Results
+
+We got an accuracy of `0.671`; however, the p-value was `1` so we cannot say we could accurately determine if a product was a fruit or vegetable. Interestingly enough, KMeans determined that grape and cherry tomatoes are fruits but any other type of tomato is a vegetable. I guess that settles the age old question: "is a tomato a fruit?".
+
+
+# Regression of Fruits and Vegetables
+
+Create a logistic regression model to predict whether an item is a fruit or a vegetable
+
+**Input features:**
+`Yield`, `CupEquivalentSize`, `CupEquivalentPrice`
+
+**Output:**
+`Vegetable` or `Fruit`
+
+## Methodology
+
+```{r train_test_split}
+  # create the train/test split
+
+  set.seed(2024)
+
+  # 10 fruit and 15 veg
+  num_fruit = 10
+  num_veg = 15
+  
+  # generate the indicies for the test
+  test.fruit.ind = sample(1:length(data.fruit$Food), num_fruit)
+  test.veg.ind = sample(1:length(data.veg$Food), num_veg)
+  
+  # grab the test items from each dataframe
+  test.fruit = data.fruit[test.fruit.ind,]
+  test.veg = data.veg[test.veg.ind,]
+  
+  # gather the remaining items
+  train.fruit = data.fruit[-test.fruit.ind,]
+  train.veg = data.veg[-test.veg.ind,]
+  
+  # combine the fruit and vegetable test/train dataframes
+  test = data.frame(rbind(test.fruit, test.veg))
+  train = data.frame(rbind(train.fruit, train.veg))
+  
+  # shuffle the sets
+  test = test[sample(1:nrow(test)),]
+  train = train[sample(1:nrow(train)),]
+  
+  # check to make sure they are shuffled
+  head(train)
+```
+
+Shuffling the subsets is redundant because there is no index feature of the dataset...
+
+```{r model_creation}
+  # training the logistic model
+  log_model = glm(isFruit~Yield+CupEquivalentSize+CupEquivalentPrice,
+                  family = binomial, data = train)
+
+  summary(log_model)
+```
+
+```{r model_testing}
+  # testing the model
+  log_model.raw_prediction = predict(log_model, test, type="response")
+  log_model.prediction = rep(0, nrow(test))
+  log_model.prediction[log_model.raw_prediction > 0.5] = 1
+  
+  # confusion matrix
+  log_model.classification_table = table(log_model.prediction, test$isFruit)
+  log_model.cm = confusionMatrix(log_model.classification_table)
+  
+  log_model.cm
+```
+
+## Results
+
+Using a 85/15 train/test split of the data, the logistic regression model had a prediction rate of `0.68`. However, the p-value is `0.2735`; therefore, we cannot confidently say that we can predict whether a product is a fruit of vegetable based on retail price, yield, and price per cup.
